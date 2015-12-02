@@ -6,8 +6,13 @@ import pymongo as mongo
 c = mongo.MongoClient("localhost", 27017)
 
 CochraneAnalysis = c["CochraneAnalysisArticle"]
+
 Data =  CochraneAnalysis["Data"]
 Train = CochraneAnalysis["Train"]
+
+CochraneRefAnalysis = c["CochraneReferenceArticle"]
+DataRef = CochraneRefAnalysis["Data"]
+
 Y = "Y"
 N = "N"
 U = "U"
@@ -33,12 +38,12 @@ def printAndTag(listOfFields, dic, trainCollection):
 		print "Please enter correct input"
 	
 
-def getTagged(listOfFields, dataCollection, trainCollection):
+def getTagged(listOfFields, dataCollection, trainCollection, DataRef):
 	for data in dataCollection.find():
 		try:
-			if (trainCollection.find({"Link": data["Link"]}).count() == 0):
+			if (trainCollection.find({"Link": data["Link"]}).count() == 0 and DataRef.find({"ParentLink": data["Link"]}).count() > 10):
 				printAndTag(listOfFields, data, trainCollection)
 		except:
 			break
 listOfFields = ['Objectives', "Authors' conclusions"]
-getTagged(listOfFields, Data, Train)
+getTagged(listOfFields, Data, Train, DataRef)

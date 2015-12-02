@@ -26,12 +26,14 @@ includeField = ['Topic', 'ParentLink', '_id', 'SelfLink']
 
 counter = 0
 
+
+# Only including 
 for data in RefArticles.find({"ABSTRA":{"$exists":True},'CONCLUSIONS':{"$exists":True}}):
 	content = data['CONCLUSIONS']
 	submit_comp_data(content, data, Data, includeField)
 
-for data in RefArticles.find({"ABSTRA":{"$exists":True},'CONCLUSIONS':{"$exists":False} }):
-	content = data["ABSTRA"]
-	submit_comp_data(content, data, Data, includeField)
+# for data in RefArticles.find({"ABSTRA":{"$exists":True},'CONCLUSIONS':{"$exists":False} }):
+# 	content = data["ABSTRA"]
+# 	submit_comp_data(content, data, Data, includeField)
 
 print "Inserted", counter 

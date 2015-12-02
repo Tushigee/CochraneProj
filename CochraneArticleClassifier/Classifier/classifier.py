@@ -11,7 +11,9 @@ PredictedLabels = CochraneAnalysis["PredictedLabels"]
 
 x = ["Y", "YU", "U", "UN", "N", "YR", "YUR", "UR", "UNR", "NR"]
 def getTag(tag):
-	return tag[0]
+	if (tag[0] == "Y"):
+		return "Y"
+	return "N"
 
 grocery = Grocery('sample')
 
