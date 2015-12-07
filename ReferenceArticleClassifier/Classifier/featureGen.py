@@ -20,8 +20,21 @@ decisive_words = ["did not", "does not", "insufficient", "against", "do not indi
 				  "no evidence", "significantly", "may", "can",
 				  "improve","improved", "improves", "significant benefit", "benefit",
 				  "significantly reduced", "were reduced", "strong evidence", "effective against",
-				  "effective", "effectively", "support" 
+				  "effective", "effectively", "support", "better", "effective", "well", "decreased", 
+				  "decrease", "decreasing", "did", "do", "does", "not", "no", "difference", "statistical", "evidence"
 				  ]
+
+# negation_words = ["not", "no"]
+# action_words = ["did", "do", "does", "should", "may", "will", "must", "can",
+# 				"support", "improve", "indicate", "effect", "affect",
+# 				"remove", "reduce", "decrease", "benefit"]
+# adj_words = ["significant", "potential", "well", "statistical", "strong"]
+# noun_words = ["benefit", "difference", "evidence", "better"]
+
+# decisive_words = negation_words + action_words + adj_words + noun_words
+
+passive_support_words = []
+
 word2index_one = {}
 word2index_two = {}
 counter = 0
@@ -34,7 +47,7 @@ for word in decisive_words:
 	counter += 1
 
 def getFeatureVec(sentence, word2index_one, word2index_two):
-	feature_vec = np.zeros(len(word2index_one) + len(word2index_two))
+	feature_vec = np.zeros(len(word2index_one) + len(word2index_two)+1)
 	sentence = sentence.split()
 	# Finding all phrases with length 2
 	for i in xrange(len(sentence)-2):
@@ -51,10 +64,10 @@ def getFeatureVec(sentence, word2index_one, word2index_two):
 	return feature_vec
 
 for data in Data.find():
-	feat_data = {'ParentLink': data['ParentLink']}
+	feat_data = {'ParentLink': data['ParentLink'], "SelfLink": data['SelfLink']}
 	feature_vec = getFeatureVec(data["Content"][0].encode("utf8"), word2index_one, word2index_two)
 	feat_data["Vector"] = list(feature_vec)
-	print feat_data
+	# print feat_data
 	DataFeatureVec.insert_one(feat_data)
 	
 print "Two dic", word2index_two

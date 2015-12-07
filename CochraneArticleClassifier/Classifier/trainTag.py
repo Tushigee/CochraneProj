@@ -39,6 +39,16 @@ def printAndTag(listOfFields, dic, trainCollection):
 	
 
 def getTagged(listOfFields, dataCollection, trainCollection, DataRef):
+	counter = 0
+	for data in dataCollection.find():
+		try:
+			if (trainCollection.find({"Link": data["Link"]}).count() == 0 and DataRef.find({"ParentLink": data["Link"]}).count() > 5):
+				counter += 1	
+		except:
+			break
+	return counter
+
+def getTagged(listOfFields, dataCollection, trainCollection, DataRef):
 	for data in dataCollection.find():
 		try:
 			if (trainCollection.find({"Link": data["Link"]}).count() == 0 and DataRef.find({"ParentLink": data["Link"]}).count() > 10):
