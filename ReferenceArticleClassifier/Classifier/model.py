@@ -5,8 +5,10 @@ import cPickle as pickle
 import sklearn.cross_validation as cross_validation
 from sklearn.dummy import DummyClassifier as Random
 from sklearn.linear_model import LogisticRegression as LR
+from sklearn.svm import  SVC
 from sknn.mlp import Classifier, Layer
 from random import shuffle
+from sklearn.preprocessing import normalize
 
 c = mongo.MongoClient("localhost", 27017)
 
@@ -66,8 +68,7 @@ for train_ar in Train.find():
 			gen_feat_vec += np.asarray(ref_arFeat['Vector'])
 		AR_LINK_LIST.append(ID_INFO_DIC)
 
-		# gen_feat_vec = (1.0/total)*gen_feat_vec
-		gen_feat_vec = (1.0/(total))*gen_feat_vec
+		gen_feat_vec = (1.0/total)*gen_feat_vec
 		gen_info.extend(gen_feat_vec)
 		dataSet.append(gen_info)
 pickle.dump(AR_LINK_LIST, open("sumInfoModel.p", "wb"))
@@ -121,18 +122,56 @@ global_wrong_zero = 0.0
 #     learning_rate=0.02,
 #     n_iter=15)
 av_mean = 0.0
-itiration = 50
+itiration = 1000
+FN = 0.0
+FP = 0.0
+TP = 0.0
+TN = 0.0
+
+def perf_measure(y_actual, y_hat):
+    TP = 0.0
+    FP = 0.0
+    TN = 0.0
+    FN = 0.0
+
+    for i in range(len(y_hat)): 
+        if y_actual[i]==y_hat[i]==1:
+           TP += 1
+    for i in range(len(y_hat)): 
+        if y_actual[i]==1 and y_actual[i]!=y_hat[i]:
+           FP += 1
+    for i in range(len(y_hat)): 
+        if y_actual[i]==y_hat[i]==0:
+           TN += 1
+    for i in range(len(y_hat)): 
+        if y_actual[i]==0 and y_actual[i]!=y_hat[i]:
+           FN += 1
+
+	return (TP/len(y_hat), FP/len(y_hat), TN/len(y_hat), FN/len(y_hat))
+
 for i in xrange(itiration):
+	# clf = Random(strategy='uniform')
 	clf = LR() # 0.60 +/- 0.24
 	np.random.shuffle(dataSet)
 	scores = cross_validation.cross_val_score(clf, dataSet[:, 2:], dataSet[:, 1], cv=10)
-	predict = cross_validation.cross_val_predict(clf, dataSet[:, 2:], dataSet[:, 1], cv=10)
 	print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-	av_mean += scores.mean()
+	predict = cross_validation.cross_val_predict(clf, dataSet[:, 2:], dataSet[:, 1], cv=10)
 	print zip(predict,dataSet[:, 1], dataSet[:, 0])
+	dTP, dFP, dTN, dFN = perf_measure(dataSet[:, 1], predict)
+	TP += dTP
+	FP += dFP
+	TN += dTN
+	FN += dFN
+
+	
+	av_mean += scores.mean()
+	
 
 print "Average accuracy is", av_mean/itiration
-
+print "Rate", TP/itiration, FP/itiration, TN/itiration, FN/itiration
+# 
+# LR:          0.281395348837 0.214728682171 0.308837209302 0.00077519379845 // 0.59036996337
+# RANDOM: Rate 0.242015503876 0.254108527132 0.257674418605 0.00186046511628 //  0.497873626374
 
 # for i in xrange(trainSize):
 # 	correct_num = 0
