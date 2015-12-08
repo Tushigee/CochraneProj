@@ -2,9 +2,11 @@
 import pymongo as mongo
 import numpy as np 
 import cPickle as pickle 
-
+import sklearn.cross_validation as cross_validation
+from sklearn.dummy import DummyClassifier as Random
 from sklearn.linear_model import LogisticRegression as LR
 from sknn.mlp import Classifier, Layer
+from random import shuffle
 
 c = mongo.MongoClient("localhost", 27017)
 
@@ -33,7 +35,6 @@ AR_LINK_LIST = []
 PARENTID = 0
 
 for train_ar in Train.find():
-	gen_info = [getTag(train_ar["Tag"])]
 	# Finding all related reference articles to this article and computing the 
 	# vector for entire dataset
 
@@ -43,8 +44,11 @@ for train_ar in Train.find():
 	#print "Total of", total
 	if (total > 5):
 		ID_INFO_DIC = {}
-		PARENTID += 1 
+		gen_info = [PARENTID, getTag(train_ar["Tag"])]
 		ID_INFO_DIC["PARENT_ID"] = PARENTID 
+		
+		PARENTID += 1 
+		
 		ID_INFO_DIC["PARENT_LINK"] = train_ar["Link"]
 		ID_INFO_DIC["PARENT_TAG"] = train_ar["Tag"]
 		ID_INFO_DIC["REF_LINKS"] = []
@@ -90,66 +94,102 @@ def GETRANDOM(data):
 	for i in xrange(len(data)):
 		l.append(np.random.randint(0, 2))
 	return l
-
+class RandomPredict:
+	def fit(x, y):
+		pass
+	def predict(vector):
+		l = []
+		for i in xrange(len(vector)):
+			l.append(np.random.randint(0, 2))
+		return l
+	def score(test_feat_vec, test_tag):
+		correct = 0.0
+		for tag in test_tag:
+			if (tag == np.random.randint(0, 2)):
+				correct+=1.0
+		return correct/len(test_tag)
 sumAcc = 0.0
 global_wrong_one = 0.0
 global_wrong_zero = 0.0
+# clf = Random(strategy='uniform')
+
+# clf = Classifier( # 0.55
+#     layers=[
+#         Layer("Sigmoid", units=25),
+#         Layer("Sigmoid", units=20),
+#         Layer("Linear")],
+#     learning_rate=0.02,
+#     n_iter=15)
+av_mean = 0.0
+itiration = 50
+for i in xrange(itiration):
+	clf = LR() # 0.60 +/- 0.24
+	np.random.shuffle(dataSet)
+	scores = cross_validation.cross_val_score(clf, dataSet[:, 2:], dataSet[:, 1], cv=10)
+	predict = cross_validation.cross_val_predict(clf, dataSet[:, 2:], dataSet[:, 1], cv=10)
+	print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+	av_mean += scores.mean()
+	print zip(predict,dataSet[:, 1], dataSet[:, 0])
+
+print "Average accuracy is", av_mean/itiration
 
 
-for i in xrange(trainSize):
-	correct_num = 0
-	testSet = dataSet[i:i+testSize]
-	testDic = AR_LINK_LIST[i : i+testSize]
+# for i in xrange(trainSize):
+# 	correct_num = 0
+# 	testSet = dataSet[i:i+testSize]
+# 	testDic = AR_LINK_LIST[i : i+testSize]
 
-	trainSet = np.concatenate((dataSet[:i], dataSet[i+testSize:]), axis=0)
-	train_tag = trainSet[:, 0]
-	# print "Train tag", train_tag
-	# print "Train set", trainSet
-	train_feat_vec = trainSet[:, 1:]
-	test_tag = testSet[:, 0]
-	test_feat_vec = testSet[:, 1:]
+# 	trainSet = np.concatenate((dataSet[:i], dataSet[i+testSize:]), axis=0)
+# 	train_tag = trainSet[:, 0]
+# 	# print "Train tag", train_tag
+# 	# print "Train set", trainSet
+# 	train_feat_vec = trainSet[:, 1:]
+# 	test_tag = testSet[:, 0]
+# 	test_feat_vec = testSet[:, 1:]
 
-	# Creating model and training the model 
-	print "Training model"
+# 	# Creating model and training the model 
+# 	print "Training model"
 	# clf = Classifier(
  #    layers=[
  #        Layer("Sigmoid", units=25),
  #        Layer("Sigmoid", units=20),
  #        Layer("Linear")],
  #    learning_rate=0.02,
-    # n_iter=15)
-	clf = LR()
+ #    n_iter=15)
+# 	clf = LR()
 
-	clf.fit(train_feat_vec, train_tag)
-	# Assesing the accuracy of the model
-	predicted_tag = clf.predict(test_feat_vec)
-	# Adding all the predicted tags for articles 
-	# predicted_tag = GETRANDOM(test_feat_vec)
-	# score = clf.score(test_feat_vec, test_tag)
-	print "Predict", zip(map(lambda x: x["PARENT_ID"], testDic), predicted_tag)
-	print "Actual", test_tag
-	# print "Score", score
-	correct = 0.0
-	wrong_one = 0.0
-	wrong_zero = 0.0
+# 	clf.fit(train_feat_vec, train_tag)
+# 	# Assesing the accuracy of the model
+# 	predicted_tag = clf.predict(test_feat_vec)
+# 	# Adding all the predicted tags for articles 
+# 	# predicted_tag = GETRANDOM(test_feat_vec)
+# 	score = clf.score(test_feat_vec, test_tag)
+# 	print "Predict", zip(map(lambda x: x["PARENT_ID"], testDic), predicted_tag)
+# 	print "Actual", test_tag
+# 	print "Score", score
+# 	correct = 0.0
+# 	wrong_one = 0.0
+# 	wrong_zero = 0.0
 
-	for i in xrange(len(predicted_tag)):
-		if predicted_tag[i] == test_tag[i]:
-			correct += 1
-		else:
-			if predicted_tag[i] == 1:
-				wrong_one += 1
-			else:
-				wrong_zero += 1
+# 	for i in xrange(len(predicted_tag)):
+# 		if predicted_tag[i] == test_tag[i]:
+# 			correct += 1
+# 		else:
+# 			if predicted_tag[i] == 1:
+# 				wrong_one += 1
+# 			else:
+# 				wrong_zero += 1
 
-	print "Accuracy was", correct/len(predicted_tag)
-	print "Dist was", getDist(train_tag)
-	# print "Counter_num", correct_num
-	sumAcc += correct/len(predicted_tag)
-	global_wrong_zero += wrong_zero/len(predicted_tag)
-	global_wrong_one += wrong_one/len(predicted_tag)
+# 	print "Accuracy was", correct/len(predicted_tag)
+# 	print "Dist was", getDist(train_tag)
+# 	# print "Counter_num", correct_num
+# 	sumAcc += correct/len(predicted_tag)
+# 	global_wrong_zero += wrong_zero/(wrong_one+wrong_zero)
+# 	global_wrong_one += wrong_one/(wrong_one+wrong_zero)
+# 	print "Wrong one", wrong_one/(wrong_one+wrong_zero)
+# 	print "Wrong zero", wrong_zero/((wrong_one+wrong_zero))
 
-print "Average global accuracy is", sumAcc/trainSize
-print "Average wrong one", global_wrong_one/trainSize
-print "Average wrong zero", global_wrong_zero/trainSize
+# print "Average global accuracy is", sumAcc/trainSize
+# print "Average wrong one", global_wrong_one/trainSize
+# print "Average wrong zero", global_wrong_zero/trainSize
 

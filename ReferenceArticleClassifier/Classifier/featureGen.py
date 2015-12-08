@@ -54,23 +54,29 @@ for word in decisive_words:
 # 	for i in xrange(len(sentence)):
 # 		word = sentence[i]
 
-
+def isInSet(word, verbs):
+	for verb in verbs:
+		if word[:len(verb)].lower() == verb:
+			return (True, verb)
+	return (False, verb)
 
 def getFeatureVec(sentence, word2index_one, word2index_two):
 	feature_vec = np.zeros(len(word2index_one) + len(word2index_two)+1)
 	sentence = sentence.split()
 	# Finding all phrases with length 2
-	for i in xrange(len(sentence)-2):
-		try:
-			feature_vec[word2index_two[" ".join(sentence[i:i+2])]] = 1
-		except KeyError:
-			pass
+	# for i in xrange(len(sentence)-2):
+	# 	try:
+	# 		feature_vec[word2index_two[" ".join(sentence[i:i+2])]] = 1
+	# 	except KeyError:
+	# 		pass
 	# Finding all phrases with length one 
 	for i in xrange(len(sentence)):
-		try:
-			feature_vec[word2index_one[sentence[i]]] = 1
-		except KeyError:
-			feature_vec
+		word = sentence[i]
+		dec, verb = isInSet(word, decisive_words)
+		if dec:
+			feature_vec[word2index_one[verb]] = 1
+		# except KeyError:
+		# 	feature_vec
 	return feature_vec
 
 for data in Data.find():
