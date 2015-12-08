@@ -15,23 +15,25 @@ CochraneAnalysis = c["CochraneReferenceArticle"]
 Data = CochraneAnalysis["Data"]
 DataFeatureVec = CochraneAnalysis["DataFeatureVec"]
 
-decisive_words = ["did not", "does not", "insufficient", "against", "do not indicate", "did not affect",
-				  "insufficiently", "not reduce", "does reduce",
-				  "no evidence", "significantly", "may", "can",
-				  "improve","improved", "improves", "significant benefit", "benefit",
-				  "significantly reduced", "were reduced", "strong evidence", "effective against",
-				  "effective", "effectively", "support", "better", "effective", "well", "decreased", 
-				  "decrease", "decreasing", "did", "do", "does", "not", "no", "difference", "statistical", "evidence"
-				  ]
+# decisive_words = ["did not", "does not", "insufficient", "against", "do not indicate", "did not affect",
+# 				  "insufficiently", "not reduce", "does reduce",
+# 				  "no evidence", "significantly", "may", "can",
+# 				  "improve","improved", "improves", "significant benefit", "benefit", "remain"
+# 				  "significantly reduced", "were reduced", "strong evidence", "effective against",
+# 				  "effective", "effectively", "support", "better", "effective", "well", "decreased", "unclear", 
+# 				  "decrease", "decreasing", "did", "do", "does", "not", "no", "difference", "statistical", "evidence"
+# 				  ]
 
-# negation_words = ["not", "no"]
-# action_words = ["did", "do", "does", "should", "may", "will", "must", "can",
-# 				"support", "improve", "indicate", "effect", "affect",
-# 				"remove", "reduce", "decrease", "benefit"]
-# adj_words = ["significant", "potential", "well", "statistical", "strong"]
-# noun_words = ["benefit", "difference", "evidence", "better"]
+negation_words = ["not", "no"]
+action_words = ["did", "do", "does", "should", "may", "will", "must", "can", "might", "was"]
 
-# decisive_words = negation_words + action_words + adj_words + noun_words
+verbs =  ["support", "improve", "indicate", "effect", "affect",
+		  "remove", "reduce", "decrease", "benefit", "less", "increase"]
+
+adj_words = ["significant", "potential", "well", "statistical", "strong", "substantial"]
+noun_words = ["difference", "evidence", "better", "unclear", "safe"]
+
+decisive_words = negation_words + action_words + adj_words + noun_words
 
 passive_support_words = []
 
@@ -45,6 +47,14 @@ for word in decisive_words:
 	else: 
 		word2index_one[word] = counter
 	counter += 1
+
+
+# def getFeatureVec_SMART(sentence):
+# 	feature_vec = np.zeros(len())
+# 	for i in xrange(len(sentence)):
+# 		word = sentence[i]
+
+
 
 def getFeatureVec(sentence, word2index_one, word2index_two):
 	feature_vec = np.zeros(len(word2index_one) + len(word2index_two)+1)

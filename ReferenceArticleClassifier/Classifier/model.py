@@ -111,14 +111,15 @@ for i in xrange(trainSize):
 
 	# Creating model and training the model 
 	print "Training model"
-	clf = Classifier(
-    layers=[
-        Layer("Sigmoid", units=25),
-        Layer("Sigmoid", units=20),
-        Layer("Linear")],
-    learning_rate=0.02,
-    n_iter=15)
-	
+	# clf = Classifier(
+ #    layers=[
+ #        Layer("Sigmoid", units=25),
+ #        Layer("Sigmoid", units=20),
+ #        Layer("Linear")],
+ #    learning_rate=0.02,
+    # n_iter=15)
+	clf = LR()
+
 	clf.fit(train_feat_vec, train_tag)
 	# Assesing the accuracy of the model
 	predicted_tag = clf.predict(test_feat_vec)
