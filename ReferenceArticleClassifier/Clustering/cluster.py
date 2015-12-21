@@ -13,7 +13,9 @@ RefArticles = db["RefArticles"]
 
 CochraneAnalysis = c["CochraneReferenceArticle"]
 Data = CochraneAnalysis["Data"]
-DataFeatureVec = CochraneAnalysis["DataFeatureVec"]
+# DataFeatureVec = CochraneAnalysis["DataFeatureVec"]
+DataFeatureVec = CochraneAnalysis["DataFeatureVecBagOfWords"]
+DataClusterResult = CochraneAnalysis["ClusterResult"]
 
 data_matrix = []
 link_matrix = []
@@ -26,4 +28,15 @@ model.fit(data_matrix)
 
 label_id_list = zip(link_matrix, model.labels_)
 p.dump(label_id_list, open("clusterResult.p", "wb"))
+
+# Submitting all clustered results to database
+
+# 0 - Yes, 1 - No
+for link, label in label_id_list:
+	dic = DataFeatureVec.find({"SelfLink": link})[0]
+	dic["ClusterTag"] = float(label)
+	try:
+		DataClusterResult.insert_one(dic)
+	except:
+		print dic
 

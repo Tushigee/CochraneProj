@@ -18,7 +18,10 @@ Train = CochraneAnalysis["Train"]
 
 # Reference article feature vec
 CochraneRefAnalysis = c["CochraneReferenceArticle"]
-DataFeatureVec = CochraneRefAnalysis["DataFeatureVec"]
+
+# Switch between these two databases to use hand picked phrases, or 
+DataFeatureVec = CochraneRefAnalysis["DataFeatureVec"] # Non bag of words based
+# DataFeatureVec = CochraneRefAnalysis["DataFeatureVecBagOfWords"] # Bag of words feature
 
 
 # Creating list of tagged article - (Tag, )
@@ -42,7 +45,7 @@ for train_ar in Train.find():
 
 	iti = DataFeatureVec.find({"ParentLink": train_ar["Link"]})
 	total = iti.count()
-
+	print "Total", total
 	#print "Total of", total
 	if (total > 5):
 		ID_INFO_DIC = {}
@@ -65,15 +68,17 @@ for train_ar in Train.find():
 		for ref_arFeat in DataFeatureVec.find({"ParentLink": train_ar["Link"]}):
 			ID_INFO_DIC["REF_LINKS"].append((ref_arFeat['SelfLink'], ref_arFeat['Vector']))
 			counter_ref += 1
-			gen_feat_vec += np.asarray(ref_arFeat['Vector'])
+			gen_feat_vec += 1.0*np.asarray(ref_arFeat['Vector'])
 		AR_LINK_LIST.append(ID_INFO_DIC)
 
 		gen_feat_vec = (1.0/total)*gen_feat_vec
+		# gen_feat_vec = normalize(gen_feat_vec)[0]
 		gen_info.extend(gen_feat_vec)
 		dataSet.append(gen_info)
 pickle.dump(AR_LINK_LIST, open("sumInfoModel.p", "wb"))
 
 dataSet = np.asarray(dataSet)
+# print "Data set begining", dataSet
 print "Total articles to be considered", found_non_zero
 
 # Doing cross validation
@@ -95,20 +100,7 @@ def GETRANDOM(data):
 	for i in xrange(len(data)):
 		l.append(np.random.randint(0, 2))
 	return l
-class RandomPredict:
-	def fit(x, y):
-		pass
-	def predict(vector):
-		l = []
-		for i in xrange(len(vector)):
-			l.append(np.random.randint(0, 2))
-		return l
-	def score(test_feat_vec, test_tag):
-		correct = 0.0
-		for tag in test_tag:
-			if (tag == np.random.randint(0, 2)):
-				correct+=1.0
-		return correct/len(test_tag)
+
 sumAcc = 0.0
 global_wrong_one = 0.0
 global_wrong_zero = 0.0
@@ -122,37 +114,50 @@ global_wrong_zero = 0.0
 #     learning_rate=0.02,
 #     n_iter=15)
 av_mean = 0.0
-itiration = 1000
+itiration = 100
 FN = 0.0
 FP = 0.0
 TP = 0.0
 TN = 0.0
 
 def perf_measure(y_actual, y_hat):
-    TP = 0.0
-    FP = 0.0
-    TN = 0.0
-    FN = 0.0
-
-    for i in range(len(y_hat)): 
-        if y_actual[i]==y_hat[i]==1:
-           TP += 1
-    for i in range(len(y_hat)): 
-        if y_actual[i]==1 and y_actual[i]!=y_hat[i]:
-           FP += 1
-    for i in range(len(y_hat)): 
-        if y_actual[i]==y_hat[i]==0:
-           TN += 1
-    for i in range(len(y_hat)): 
-        if y_actual[i]==0 and y_actual[i]!=y_hat[i]:
-           FN += 1
-
+	TP = 0.0
+	FP = 0.0
+	TN = 0.0
+	FN = 0.0
+	counter = 0
+	for i in range(len(y_hat)): 
+	    if y_actual[i]==y_hat[i] and y_hat[i] == 1:
+	       TP += 1
+	for i in range(len(y_hat)): 
+	    if y_actual[i]==1 and y_actual[i]!=y_hat[i]:
+	       FP += 1
+	for i in range(len(y_hat)): 
+	    if y_actual[i]==y_hat[i] and y_hat[i]==0:
+	       TN += 1
+	for i in range(len(y_hat)): 
+	    if y_actual[i]==0 and y_actual[i]!=y_hat[i]:
+	       FN += 1
+	# for i in xrange(len(y_actual)): 
+	# 	if int(y_actual[i])==int(y_hat[i]):
+	# 		if (y_hat[i] == 1):
+	# 			TP += 1
+	# 		else:
+	# 			TN += 1
+	# 	elif (y_actual[i] != y_hat[i]):
+	# 		if (y_actual[i] == 1):
+	# 			FN += 1
+	# 		else:
+	# 			FP += 1
+	# 	else:
+	# 		print "Actual", y_actual[i], y_hat[i]
 	return (TP/len(y_hat), FP/len(y_hat), TN/len(y_hat), FN/len(y_hat))
 
 for i in xrange(itiration):
 	# clf = Random(strategy='uniform')
 	clf = LR() # 0.60 +/- 0.24
 	np.random.shuffle(dataSet)
+	# print "Dataset", dataSet
 	scores = cross_validation.cross_val_score(clf, dataSet[:, 2:], dataSet[:, 1], cv=10)
 	print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 	predict = cross_validation.cross_val_predict(clf, dataSet[:, 2:], dataSet[:, 1], cv=10)
@@ -169,66 +174,17 @@ for i in xrange(itiration):
 
 print "Average accuracy is", av_mean/itiration
 print "Rate", TP/itiration, FP/itiration, TN/itiration, FN/itiration
-# 
-# LR:          0.281395348837 0.214728682171 0.308837209302 0.00077519379845 // 0.59036996337
-# RANDOM: Rate 0.242015503876 0.254108527132 0.257674418605 0.00186046511628 //  0.497873626374
+ 
+# Average accuracy is 0.605191666667
+# LR clustering based classification 
+# LR BAGOFWORD 0.300130769231 0.199869230769 0.305115384615 0.00160769230769  // 0.6051
+# LR:          0.281395348837 0.214728682171 0.308837209302 0.00077519379845  // 0.59036996337  # Heuristic
+# RANDOM: Rate 0.242015503876 0.254108527132 0.257674418605 0.00186046511628  // 0.497873626374
+# ClusterBased 0.446153846153 0.053846153846 0.1            0.00769230769230
 
-# for i in xrange(trainSize):
-# 	correct_num = 0
-# 	testSet = dataSet[i:i+testSize]
-# 	testDic = AR_LINK_LIST[i : i+testSize]
-
-# 	trainSet = np.concatenate((dataSet[:i], dataSet[i+testSize:]), axis=0)
-# 	train_tag = trainSet[:, 0]
-# 	# print "Train tag", train_tag
-# 	# print "Train set", trainSet
-# 	train_feat_vec = trainSet[:, 1:]
-# 	test_tag = testSet[:, 0]
-# 	test_feat_vec = testSet[:, 1:]
-
-# 	# Creating model and training the model 
-# 	print "Training model"
-	# clf = Classifier(
- #    layers=[
- #        Layer("Sigmoid", units=25),
- #        Layer("Sigmoid", units=20),
- #        Layer("Linear")],
- #    learning_rate=0.02,
- #    n_iter=15)
-# 	clf = LR()
-
-# 	clf.fit(train_feat_vec, train_tag)
-# 	# Assesing the accuracy of the model
-# 	predicted_tag = clf.predict(test_feat_vec)
-# 	# Adding all the predicted tags for articles 
-# 	# predicted_tag = GETRANDOM(test_feat_vec)
-# 	score = clf.score(test_feat_vec, test_tag)
-# 	print "Predict", zip(map(lambda x: x["PARENT_ID"], testDic), predicted_tag)
-# 	print "Actual", test_tag
-# 	print "Score", score
-# 	correct = 0.0
-# 	wrong_one = 0.0
-# 	wrong_zero = 0.0
-
-# 	for i in xrange(len(predicted_tag)):
-# 		if predicted_tag[i] == test_tag[i]:
-# 			correct += 1
-# 		else:
-# 			if predicted_tag[i] == 1:
-# 				wrong_one += 1
-# 			else:
-# 				wrong_zero += 1
-
-# 	print "Accuracy was", correct/len(predicted_tag)
-# 	print "Dist was", getDist(train_tag)
-# 	# print "Counter_num", correct_num
-# 	sumAcc += correct/len(predicted_tag)
-# 	global_wrong_zero += wrong_zero/(wrong_one+wrong_zero)
-# 	global_wrong_one += wrong_one/(wrong_one+wrong_zero)
-# 	print "Wrong one", wrong_one/(wrong_one+wrong_zero)
-# 	print "Wrong zero", wrong_zero/((wrong_one+wrong_zero))
-
-# print "Average global accuracy is", sumAcc/trainSize
-# print "Average wrong one", global_wrong_one/trainSize
-# print "Average wrong zero", global_wrong_zero/trainSize
-
+# Actual:
+# LR BAGOFWORD: 0.301769230769 & 0.194 & 0.306 & 0.198230769231
+# LR:           0.304923076923 & 0.206 & 0.293 & 0.195076923077
+# Random:       0.252615384615 & 0.250 & 0.249 & 0.247384615385
+# BagOfWord:    0.446153846153 0.4   0.1   0.053846153846 // Clustering
+# BAGOfWord:    0.230769230769 & 0.169 & 0.330 & 0.269230769230
